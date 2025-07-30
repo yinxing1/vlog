@@ -1,0 +1,169 @@
+
+个人博客系统 - 概要设计说明书 (V1.0)
+1. 系统体系结构设计 (System Architecture Design)
+本项目采用业界成熟的 前后端分离架构 (Frontend-Backend Separation Architecture)。
+● 前端 (Frontend): 作为独立的、纯粹的“表示层”，负责界面渲染、用户交互和数据展示。它通过HTTP(S)协议调用后端提供的API接口来获取和提交数据。
+● 后端 (Backend): 作为“业务逻辑层”和“数据访问层”，负责处理业务逻辑、进行数据持久化、提供RESTful API接口给前端或其他客户端调用。
+选择该架构的理由:
+● 高内聚低耦合: 前后端职责单一，便于独立开发、测试和部署。
+● 技术栈灵活: 允许前后端选择最适合自身场景的技术栈。
+● 并行开发: 一旦接口契约（API文档）确定，前后端团队可以并行开发，提升开发效率。
+● 更好的用户体验: 前端可以利用Vue.js构建单页应用（SPA），实现更快的页面响应和更流畅的交互。
+● 后端技术栈:
+  ○ 核心框架: Spring Boot 3.x
+  ○ Web框架: Spring MVC
+  ○ 安全框架: Spring Security (用于认证与授权)
+  ○ 持久层框架: MyBatis
+  ○ 数据库: MySQL 8.0
+  ○ 认证方案: JWT (JSON Web Token)
+  ○ API文档: SpringDoc OpenAPI (替代Swagger)
+  ○ 开发工具: Lombok (简化POJO开发), Maven/Gradle (项目构建)
+● 前端技术栈:
+  ○ 核心框架: Vue.js 3.x
+  ○ UI组件库: Element Plus (用于后台管理界面), 自定义CSS或轻量级UI库 (用于前台展示)
+  ○ 路由管理: Vue Router
+  ○ HTTP客户端: Axios
+  ○ Markdown渲染: Marked.js 或 Vditor
+  ○ 构建工具: Vite
+系统典型的生产环境部署结构如下：
+Generated code
++---------------+      +----------------+      +---------------------+      +-----------------+
+|               |      |                |      |                     |      |                 |
+|  User Browser | <==> |  Nginx Server  | <==> | Spring Boot App     | <==> |  MySQL Server   |
+| (Vue App)     |      | (Web Server)   |      | (Application Server)|      | (Database)      |
+|               |      |                |      |                     |      |                 |
++---------------+      +----------------+      +---------------------+      +-----------------+
+       |                      | (1) Serves Static Files      ^
+       |                      | (2) Reverse Proxy            |
+       +----------------------+------------------------------+
+说明:
+● 用户浏览器: 运行由Nginx分发的Vue.js前端应用代码。
+● Nginx服务器:
+  ○ 静态文件服务: 托管编译后的前端静态资源（HTML, CSS, JS）。
+  ○ 反向代理: 将所有 /api 或类似前缀的API请求转发到后端的Spring Boot应用服务器，解决跨域问题。
+● Spring Boot应用服务器: 运行后端Java程序，处理业务逻辑并与数据库交互。
+● MySQL服务器: 存储博客系统的所有数据。
+
+2. 模块划分与设计 (Module Design)
+为了代码的清晰和可维护性，后端将采用多模块（Multi-module）项目结构。
+● my-blog/ (父项目)
+  ○ pom.xml (管理所有子模块的依赖和版本)
+  ○ blog-common/
+    ■ 职责: 存放全项目通用的类和工具。
+    ■ 内容: 统一响应结果类 (Result)、全局常量、自定义异常、工具类（如JWT工具、日期工具等）。
+  ○ blog-framework/
+    ■ 职责: 集成和配置框架级功能。
+    ■ 内容: Spring Security配置、MyBatis配置、全局异常处理器、跨域（CORS）配置。
+  ○ blog-system/
+    ■ 职责: 实现系统的核心业务逻辑。
+    ■ 内容: 所有业务模块的Controller, Service, Mapper, Entity/POJO（如文章、评论、用户认证等）。
+前端将采用基于功能和类型的标准目录结构。
+● my-blog-vue/
+  ○ src/
+    ■ api/: 存放所有与后端交互的API请求函数（如article.js, comment.js）。
+    ■ assets/: 存放静态资源（CSS, images, fonts）。
+    ■ components/: 存放可复用的UI组件（如Header.vue, Pagination.vue）。
+    ■ router/: 存放Vue Router的路由配置。
+    ■ store/: 存放Pinia/Vuex的状态管理逻辑（如用户信息、Token）。
+    ■ utils/: 存放通用工具函数（如请求封装、日期格式化）。
+    ■ views/: 存放页面级组件。
+      ● frontend/: 前台页面 (Home.vue, ArticleDetail.vue)
+      ● backend/: 后台管理页面 (Dashboard.vue, ArticleManager.vue)
+
+3. 核心接口设计 (Core Interface Design)
+所有API将遵循 RESTful (Representational State Transfer) 设计风格，使用标准的HTTP方法表达操作意图。
+● GET: 查询资源。
+● POST: 创建资源。
+● PUT: 更新整个资源。
+● DELETE: 删除资源。
+所有后端API将返回统一的JSON格式，便于前端进行统一处理。
+Generated json
+{
+  "code": 200,             // 业务状态码 (200: 成功, 401: 未认证, 403: 无权限, 500: 服务器内部错误)
+  "message": "操作成功",   // 提示信息
+  "data": { ... } / [ ... ] // 实际返回的数据，可能是对象或数组；若无数据可为null
+}
+
+注:/admin/** 前缀的接口均需要管理员登录认证。
+● 认证模块 (Auth)
+  ○ POST /admin/login: 管理员登录
+● 文章模块 (Article)
+  ○ GET /articles: （前台）获取已发布的文章列表（分页、可按分类/标签过滤）
+  ○ GET /articles/{id}: （前台）获取单篇文章详情
+  ○ GET /admin/articles: （后台）获取所有文章列表（分页、可按状态/标题等筛选）
+  ○ POST /admin/articles: 创建新文章
+  ○ PUT /admin/articles: 更新文章
+  ○ DELETE /admin/articles/{id}: 删除文章
+● 分类模块 (Category)
+  ○ GET /categories: （前台）获取所有分类及其文章数
+  ○ GET /admin/categories: （后台）获取所有分类列表
+  ○ POST /admin/categories: 创建新分类
+  ○ PUT /admin/categories: 更新分类
+  ○ DELETE /admin/categories/{id}: 删除分类
+● 评论模块 (Comment)
+  ○ GET /comments/article/{articleId}: （前台）获取某篇文章下的评论（树形结构）
+  ○ POST /comments: （前台）提交新评论
+  ○ GET /admin/comments: （后台）获取所有评论列表（分页、可按状态筛选）
+  ○ PUT /admin/comments/{id}/approve: 审核通过评论
+  ○ DELETE /admin/comments/{id}: 删除评论
+
+4. 数据库概要设计 (Database High-Level Design)
+根据需求分析，识别出以下核心业务实体：
+● 用户 (User): 存储管理员账户信息。
+● 文章 (Article): 博客的核心内容。
+● 分类 (Category): 文章的分类。
+● 标签 (Tag): 文章的关键词标签。
+● 评论 (Comment): 访客对文章的留言。
+● 文章-标签关联 (Article_Tag): 用于实现文章和标签的多对多关系。
+以下为实体间的关系描述：
+● 一个 用户(管理员) 可以发布多篇 文章。(一对多)
+● 一个 分类 可以包含多篇 文章。(一对多)
+● 一篇 文章 只能属于一个 分类。
+● 一篇 文章 可以拥有多个 标签。(多对多，通过Article_Tag关联表实现)
+● 一个 标签 可以关联多篇 文章。
+● 一篇 文章 可以有多条 评论。(一对多)
+● 一条 评论 可以有多条 回复 (子评论)。(一对多，自关联)
+文本化E-R表示:
+Generated code
++--------+ 1      N +---------+
+|  User  |----------| Article |
++--------+          +---------+
+                       ^   | 1
+                       | N |
++----------+ 1     N +---------+
+| Category |---------| Article |
++----------+         +---------+
+                       | N   M
+                       |
++--------------------+   +-----+
+| Article_Tag (中间表) |---| Tag |
++--------------------+   +-----+
+                         1 | N
+                           |
++---------+ 1      N +---------+
+| Article |----------| Comment |
++---------+          +---------+
+                       ^   | (自关联)
+                       | 1 |
+                       +---+ N
+
+5. 安全设计 (Security Design)
+● 采用基于 JWT (JSON Web Token) 的无状态认证机制。
+● 流程:
+  ○ 管理员通过 /admin/login 接口提交用户名和密码。
+  ○ 后端验证成功后，生成一个包含用户ID、角色和过期时间的JWT。
+  ○ 后端将JWT返回给前端。
+  ○ 前端将JWT存储在 localStorage 或 HttpOnly Cookie 中。
+  ○ 前端在后续所有需要认证的API请求的 Authorization 请求头中携带JWT (格式: Bearer <token>)。
+  ○ 后端通过一个过滤器 (Filter) 拦截受保护的请求，校验JWT的有效性，若有效则解析出用户信息并放入安全上下文。
+● 采用基于 角色 (Role-Based Access Control - RBAC) 的权限模型。
+● 实现:
+  ○ 系统中仅定义一个 ADMIN 角色。
+  ○ 使用Spring Security的注解或配置，对所有 /admin/** 路径的API接口进行保护，要求请求者必须拥有 ADMIN 角色。
+● 密码存储: 用户密码在数据库中必须使用 BCrypt 算法进行加盐哈希存储。
+● SQL注入: 全面使用MyBatis的参数化查询（#{}占位符），杜绝SQL拼接，从根本上防止SQL注入。
+● 跨站脚本攻击 (XSS):
+  ○ 后端：对用户输入内容（特别是评论内容）进行过滤和转义，可以使用 OWASP Java HTML Sanitizer 等库。
+  ○ 前端：在使用 v-html 等指令渲染用户内容时，必须确保内容是可信的或已经过后台净化。Markdown渲染库需配置为安全模式。
+● 跨站请求伪造 (CSRF): 由于使用JWT并通过Authorization头传递，而不是依赖cookie进行会话管理，因此天然地大大降低了CSRF攻击的风险。
+

@@ -1,0 +1,91 @@
+
+个人博客系统 - 后端编码计划 (V1.0)
+目标: 实现《概要设计说明书》和《数据库设计说明书》中定义的所有后端功能。
+技术栈: Spring Boot, Spring Security, MyBatis, MySQL, JWT, Lombok, SpringDoc.
+
+第一阶段：项目初始化与基础框架搭建
+这个阶段的目标是创建一个结构清晰、配置完善、可以运行的空项目。这是所有后续开发的地基。
+● 步骤 1.1: 创建多模块Maven项目
+  ○ 创建父项目 my-blog。
+  ○ 在父项目下创建三个子模块：
+    ■ blog-common: 存放公共工具类和数据结构。
+    ■ blog-framework: 存放框架级别的配置，如安全、数据库、全局异常处理。
+    ■ blog-system: 存放核心业务逻辑代码（Controller, Service, Mapper, Entity）。
+● 步骤 1.2: 配置项目依赖 (POM.xml)
+  ○ 在父 pom.xml 中使用 <dependencyManagement> 统一管理所有依赖版本，包括 spring-boot-dependencies。
+  ○ 为各模块添加所需依赖：
+    ■ blog-system: 依赖 blog-common 和 blog-framework。
+    ■ 所有模块: spring-boot-starter-web, mysql-connector-j, mybatis-spring-boot-starter, lombok。
+    ■ blog-framework: spring-boot-starter-security, jjwt (JWT库), springdoc-openapi-starter-webmvc-ui。
+● 步骤 1.3: 基础配置 (application.yml)
+  ○ 配置服务器端口 (server.port)。
+  ○ 配置数据库连接信息（URL, username, password）。
+  ○ 配置MyBatis（Mapper XML文件路径, 实体类别名等）。
+● 步骤 1.4: 实现公共模块 (blog-common)
+  ○ 创建统一的API响应实体类 Result<T>，包含 code, message, data 字段。
+  ○ 定义全局使用的常量和枚举（如文章状态、响应码）。
+● 步骤 1.5: 配置框架模块 (blog-framework)
+  ○ 配置全局异常处理器 (GlobalExceptionHandler)，用于捕获业务异常并返回统一的 Result 对象。
+  ○ 配置跨域（CORS）支持。
+  ○ 配置MyBatis，启用驼峰命名转换等。
+阶段交付物: 一个可以成功启动，并能响应简单请求（如返回 "Hello World"）的、结构良好的Spring Boot多模块项目。
+
+第二阶段：核心认证与用户模块开发
+这是系统的入口，优先级最高。我们将实现管理员的登录认证功能。
+● 步骤 2.1: 实现用户实体与Mapper
+  ○ 在 blog-system 模块中，根据数据库设计创建 SysUser 实体类。
+  ○ 创建 SysUserMapper 接口，并编写对应的XML文件，实现根据用户名查询用户的SQL。
+● 步骤 2.2: 实现认证服务
+  ○ 在 blog-framework 中创建JWT工具类 (JwtUtil)，用于生成和解析Token。
+  ○ 在 blog-system 中创建 UserDetailsService 的实现类，用于从数据库加载用户信息以供Spring Security使用。
+● 步骤 2.3: 配置Spring Security
+  ○ 在 blog-framework 中创建 SecurityConfig 配置类。
+  ○ 配置 PasswordEncoder (使用 BCryptPasswordEncoder)。
+  ○ 配置HTTP安全规则，放行登录接口 /admin/login，保护其他 /admin/** 接口。
+  ○ 创建并注册JWT认证过滤器 (JwtAuthenticationTokenFilter)，用于在每个请求中校验Token。
+● 步骤 2.4: 实现登录接口
+  ○ 在 blog-system 中创建 AuthenticationController。
+  ○ 实现 /admin/login 接口，接收用户名和密码，调用Spring Security的 AuthenticationManager 进行认证，成功后使用 JwtUtil 生成Token并返回给前端。
+阶段交付物: 功能完备的登录接口。可以通过工具（如Postman）测试登录，获取Token，并使用该Token访问受保护的接口。
+
+第三阶段：核心内容管理模块 (CRUD)
+在用户可以登录后，我们开始实现博客最核心的内容管理功能。
+● 步骤 3.1: 分类 (Category) 和标签 (Tag) 管理 (这两个模块结构简单且相似，适合先做)
+  ○ 创建 Category 和 Tag 的 Entity, Mapper, Service, Controller。
+  ○ 实现完整的CRUD（增、删、改、查）API接口。
+● 步骤 3.2: 文章 (Article) 管理 (最核心的模块)
+  ○ 创建 Article 实体类。
+  ○ 创建 ArticleMapper 接口及XML，编写复杂的增删改查SQL（特别是涉及多表查询的列表页）。
+  ○ 创建 ArticleService，实现核心业务逻辑，例如：
+    ■ 发布文章时，需要同时处理文章信息和文章-标签关联信息（blog_article_tag 表）。
+    ■ 查询文章列表时，需要支持分页和按条件（标题、分类、状态）筛选。
+  ○ 创建 ArticleController，对外暴露后台管理所需的API。
+阶段交付物: 一套完整的后台内容管理API，包括对文章、分类、标签的增删改查功能。可以通过API文档（SpringDoc）清晰地看到所有接口定义。
+
+第四阶段：辅助管理模块与前台API
+完成核心内容管理后，我们来完善其他辅助功能和面向访客的API。
+● 步骤 4.1: 评论 (Comment) 管理
+  ○ 创建 Comment 的 Entity, Mapper, Service, Controller。
+  ○ 实现后台API：查询评论列表（支持分页）、审核通过评论、删除评论。
+● 步骤 4.2: 系统配置 (Config) 管理
+  ○ 创建 SysConfig 的 Entity, Mapper, Service, Controller。
+  ○ 实现后台API：获取所有配置项、更新配置项。
+● 步骤 4.3: 实现前台展示API
+  ○ 在现有的Controller（或新建专门的Controller）中，添加不需要登录即可访问的API，例如：
+    ■ 获取已发布的文章列表（首页）
+    ■ 获取单篇文章详情（文章页，注意浏览量 view_count 的递增逻辑）
+    ■ 获取某文章下的评论列表（树形结构）
+    ■ 提交评论
+    ■ 按分类/标签/归档查询文章列表
+    ■ 文章搜索
+阶段交付物: 所有后端API开发完成，包括后台管理和前台展示所需的所有接口。系统功能在API层面已经完备。
+
+第五阶段：联调、测试与完善
+● 步骤 5.1: API文档完善
+  ○ 检查并完善所有Controller和实体类上的SpringDoc注解，确保生成的API文档清晰、准确。
+● 步骤 5.2: 单元测试 (见后续步骤)
+  ○ 为核心的Service层方法编写单元测试用例。
+● 步骤 5.3: 代码审查与重构
+  ○ 回顾代码，检查是否有不合理的实现，优化性能，统一代码风格。
+阶段交付物: 一个功能完备、经过初步测试、文档清晰的后端应用程序。
+

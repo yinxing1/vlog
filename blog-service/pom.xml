@@ -1,99 +1,126 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
+	<!-- 继承Spring Boot官方父项目，它会帮忙管理大部分常用依赖的版本 -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.0</version>
+		<version>3.1.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.she</groupId>
-	<artifactId>blog</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>blog-service</name>
-	<description>Demo project for Spring Boot</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
+	<groupId>com.myblog</groupId>
+	<artifactId>blog</artifactId> <!-- 已修正名称 -->
+	<version>1.0-SNAPSHOT</version>
+	<packaging>pom</packaging> <!-- 父项目的打包方式必须是 pom -->
+
+	<!-- 聚合所有子模块 -->
+	<modules>
+		<module>blog-common</module>
+		<module>blog-framework</module>
+		<module>blog-system</module>
+	</modules>
+
 	<properties>
-		<java.version>21</java.version>
+		<!-- JDK 版本 -->
+		<java.version>17</java.version>
+		<!-- 文件编码 -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!-- 自定义依赖版本 -->
+		<mybatis.version>3.0.2</mybatis.version>
+		<mysql.connector.version>8.0.33</mysql.connector.version>
+		<lombok.version>1.18.30</lombok.version>
+		<jjwt.version>0.9.1</jjwt.version>
+		<springdoc.version>2.2.0</springdoc.version>
 	</properties>
-	<dependencies>
-		
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
 
-		<dependency>
-			<groupId>com.baomidou</groupId>
-			<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-			<version>3.5.12</version>
-		</dependency>
-		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+	<!--
+      dependencyManagement: 统一管理项目中的依赖版本。
+      这里声明的依赖不会被实际引入，除非子模块中也声明了该依赖（且不指定版本号）。
+      这样做的好处是：所有子模块使用的依赖版本都由父项目控制，避免了版本冲突。
+    -->
+	<dependencyManagement>
+		<dependencies>
+			<!-- 内部模块依赖 -->
+			<dependency>
+				<groupId>com.myblog</groupId>
+				<artifactId>blog-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.myblog</groupId>
+				<artifactId>blog-framework</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
-			</plugin>
-			<plugin>
+			<!-- Spring Boot Web Starter -->
+			<dependency>
 				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+				<artifactId>spring-boot-starter-web</artifactId>
+				<version>${project.parent.version}</version>
+			</dependency>
+
+			<!-- Spring Boot Test Starter -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-test</artifactId>
+				<scope>test</scope>
+				<version>${project.parent.version}</version>
+			</dependency>
+
+			<!-- MyBatis Spring Boot Starter -->
+			<dependency>
+				<groupId>org.mybatis.spring.boot</groupId>
+				<artifactId>mybatis-spring-boot-starter</artifactId>
+				<version>${mybatis.version}</version>
+			</dependency>
+
+			<!-- MySQL Connector -->
+			<dependency>
+				<groupId>com.mysql</groupId>
+				<artifactId>mysql-connector-j</artifactId>
+				<version>${mysql.connector.version}</version>
+			</dependency>
+
+			<!-- Lombok -->
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>${lombok.version}</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- Spring Security -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-security</artifactId>
+				<version>${project.parent.version}</version>
+			</dependency>
+
+			<!-- JWT -->
+			<dependency>
+				<groupId>io.jsonwebtoken</groupId>
+				<artifactId>jjwt</artifactId>
+				<version>${jjwt.version}</version>
+			</dependency>
+
+			<!-- JAXB API, for JWT on JDK 9+ -->
+			<dependency>
+				<groupId>javax.xml.bind</groupId>
+				<artifactId>jaxb-api</artifactId>
+				<version>2.3.1</version>
+			</dependency>
+
+			<!-- SpringDoc OpenAPI (Swagger UI) -->
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>${springdoc.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 </project>
