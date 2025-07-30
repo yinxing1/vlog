@@ -1,0 +1,6 @@
+--设置代理
+d:
+cd D:\workspace\blog-project>
+set https_proxy=http://127.0.0.1:10808
+--启动
+gemini
