@@ -17,7 +17,5 @@ public class GlobalExceptionHandler {
         // 向前端返回通用错误信息
         return Result.error(500, "系统开小差了，请稍后重试");
     }
-    // 后续可以添加更多针对特定异常的处理，如：
-    // @ExceptionHandler(BusinessException.class)
-    // public Result handleBusinessException(BusinessException e) { ... }
+
 }
